@@ -107,26 +107,6 @@ std::string getDirName(std::string path){
  * Returns:
  *     info : Tuple containing DAT name, DAT name without extension, DAT name without extension and date, and DAT date (in that order)
  */
-/*
-std::tuple<std::string, std::string, std::string, std::string> getDatName(std::string path){
-  std::string fname = path.substr(path.find_last_of("/\\") + 1); // fname: filename with extension
-  std::string::size_type const p(fname.find_last_of('.'));
-  std::string fname_noe = fname.substr(0, p); // fname_noe: filename without extension
-
-  std::string::size_type const q(fname.find_last_of('('));
-  std::string fname_noed = fname.substr(0, q); // fname_noed: filename without extension and without date
-  std::string fname2 = fname; // copy fname to fname2
-  fname2.erase(fname2.find(fname_noed),fname_noed.size()); // remove fname_noed from fname2
-  std::string date = std::regex_replace(fname2, std::regex(R"([\D])"), ""); // R"([\D])" = select non-numeric characters, and remove them from fname2
-
-  if(fname_noed.back() == ' '){ // if last character is a space
-    fname_noed.pop_back(); // remove it
-  }
-
-  std::tuple<std::string, std::string, std::string, std::string> info = std::make_tuple(fname, fname_noe, fname_noed, date);
-  return info;
-}
-*/
 std::tuple<std::string, std::string, std::string, std::string> getDatName(std::string path){
   std::string fname = path.substr(path.find_last_of("/\\") + 1); // fname: filename with extension
   std::string::size_type const p(fname.find_last_of('.'));

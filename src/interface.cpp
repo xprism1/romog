@@ -555,7 +555,7 @@ void deleteProfile(std::string dat_path, bool toRemoveEntry){
 }
 
 /*
- * Updates DAT files in DAT folder, by replacing old DATs with new DATs in newDAT folder. Also updates the relevant cache entry's DAT name. Optionally downloads DATs from the links text file to new-DATs-path/YYYYMMDD-HHMMSS (empty lines or lines beginning with '#' are ignored)
+ * Updates DAT files in DAT folder, by replacing old DATs with new DATs in newDAT folder. Also updates the relevant DAT name in config file. Optionally downloads DATs from the links text file to new-DATs-path/YYYYMMDD-HHMMSS (empty lines or lines beginning with '#' are ignored)
  * 
  * Arguments:
  *     download (Optional) : Whether to download new DATs from the links text file.
@@ -649,7 +649,7 @@ void updateDats(bool download){
 
           filesys::rename(new_dats_path[j],parent_path+"/"+new_fname); // move new_dats_path[j] to directory with old DAT
           filesys::remove(i); // delete old DAT
-          std::cout << new_dats_name[j] << ": " << date << " -> " << new_dats_date[j] << std::endl;
+          std::cout << new_dats_name[j] << ": " << formatDate(date) << " -> " << formatDate(new_dats_date[j]) << std::endl;
 
           old_dats.push_back(std::make_tuple(old_fname,new_fname));
         }
