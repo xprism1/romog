@@ -1,0 +1,62 @@
+name: build
+
+on: [push, pull_request]
+
+jobs:
+  ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Tools
+      run: sudo apt-get -y install tree
+    - name: Configure
+      run: cmake -DSANITIZE_ADDRESS=On .
+    - name: Build
+      run: |
+        cmake --build .
+        tree -sha .
+    - name: Test
+      run: ASAN_OPTIONS=detect_leaks=0 LSAN_OPTIONS=verbosity=1:log_threads=1 ctest -VV
+
+  macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Tools
+      run: brew install tree
+    - name: Configure
+      run: |
+        pip3 install scan-build
+        scan-build cmake -DCMAKE_AR=/usr/bin/ar -DSANITIZE_ADDRESS=On .
+    - name: Build
+      run: |
+        scan-build -v --exclude test -enable-checker security.FloatLoopCounter -enable-checker security.insecureAPI.UncheckedReturn --status-bugs cmake --build .
+        tree -sha .
+    - name: Test
+      run:  ctest -VV
+
+  windows-msvc:
+    runs-on: "windows-latest"
+    steps:
+    - uses: actions/checkout@v2
+    - name: Configure
+      run:  cmake -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=TRUE .
+    - name: Build
+      run: |
+        cmake --build . --config "Debug"
+        tree /a /f .
+    - name: Test
+      run: ctest -VV -C "Debug"
+
+  windows-mingw:
+    runs-on: "windows-latest"
+    steps:
+    - uses: actions/checkout@v2
+    - name: Configure
+      run:  cmake -G "MinGW Makefiles" -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=TRUE .
+    - name: Build
+      run: |
+        mingw32-make
+        tree /a /f .
+    - name: Test
+      run: ctest -VV -C "Debug"
