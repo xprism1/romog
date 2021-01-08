@@ -7,6 +7,8 @@ romorganizer is designed to be run from the terminal and is command-line only, m
 
 **WARNING: This project is still in the experimental stage and as such, expect bugs to occur. It is your responsibility to make backups of your sets before using this tool. I work on this in my free time, so do not expect a predictable release/commit schedule.**
 
+![](screenshot.png)
+
 ## Features
 - Easy batch scanning of DAT files
 - Shows which of your DATs are outdated
