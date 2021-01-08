@@ -99,7 +99,7 @@ void rebuild(std::string dat_path, std::string folder_path, bool toRemove){
 
   std::cout << "Rebuilding " << dat_path << std::endl;
 
-  // recursively extract files in rebuild_path until there's no more compresed file left
+  // recursively extract files in rebuild_path until there's no more compressed file left
   recursiveExtractCompressedFiles(rebuild_path);
   std::cout << "Extracted all compressed archives (if any)" << std::endl;
   

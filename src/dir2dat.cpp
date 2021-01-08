@@ -270,11 +270,11 @@ std::string fixSortedDat(std::string parent_path){
  * 
  * How entries in DAT are made:
  * folder_path
- * |- a.rom       -> 1 entry with set name = a, rom name = a.rom
- * |_ test        -> 1 entry with set name = test
- *    |- b.rom    -> sub-entry: rom name = b.rom
- *    |_ test2
- *       |_ c.rom -> sub-entry: rom name = test2\\c.rom
+ * ├─ a.rom       -> 1 entry with set name = a, rom name = a.rom
+ * └─ test        -> 1 entry with set name = test
+ *    ├─ b.rom    -> sub-entry: rom name = b.rom
+ *    └─ test2
+ *       └─ c.rom -> sub-entry: rom name = test2\\c.rom
  * 
  * Description is set to set name.
  * 

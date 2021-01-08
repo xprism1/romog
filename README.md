@@ -9,6 +9,9 @@ romorganizer is designed to be run from the terminal and is command-line only, m
 
 ![](screenshot.png)
 
+## Disclaimer
+This tool does not condone usage of unauthorized downloaded game ROMs, and does not provide means to acquire any ROMs. Only use this tool with ROMs you personally copied from game medium(s) that you own. Do not distribute any ROMs and once you do not own the original game medium(s) anymore, remove the ROMs/copies that you have made.
+
 ## Features
 - Easy batch scanning of DAT files
 - Shows which of your DATs are outdated
