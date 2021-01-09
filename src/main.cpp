@@ -95,15 +95,12 @@ R"(romorganizer by xprism
 int main(int argc, char* argv[]){
   std::map<std::string, docopt::value> args = docopt::docopt(USAGE, {argv+1, argv+argc}, true, "romorganizer v1.0\nxprism 2020-2021");  // true: show help if requested, followed by version string
 
-  /*
   cuserid(username); // getting username for config path
   if(!(filesys::is_directory("/home/" + std::string(username) + "/.config/romog/"))){
     filesys::create_directory("/home/" + std::string(username) + "/.config/romog/"); // create .config/romog/ if not present
   }
 
   config_path = "/home/" + std::string(username) + "/.config/romog/config.yaml"; // config file
-  */
-  config_path = "/home/xp/Desktop/xp (My Tools)/romorganizer/debug/config.yaml"; // config file
 
   if((!(filesys::exists(config_path))) || args["--init"].asBool()){ // initializes config file with paths (YAML format)
     YAML::Node config;
