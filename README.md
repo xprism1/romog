@@ -28,10 +28,8 @@ This tool does not condone usage of unauthorized downloaded game ROMs, and does 
 ## Build from source
 1. Install these dependencies through your package manager: `openssl`, `pugixml`, `xalan-c`, `xerces-c`, `libarchive`, `yaml-cpp`, `curl`. Install `git`, `make`, `gcc` if you don't have them.
 2. Clone the repository: `git clone https://github.com/xprism1/romog.git`
-3. Go to the include directory: `cd romog/include` and modify `paths.h`, replacing the paths in quotes with the paths you wish to use.
-3. Change to the source directory: `cd ../romog/src`
+3. Change to the source directory: `cd romog/src`
 4. `mkdir obj/` if it is not present, then to build romog: `make -jX` and `sudo make install`, where X is the number of jobs you wish to use for compilation. (`sudo make uninstall` to uninstall.)
-5. Copy `sort.xsl` to what you specified in `sort_xsl_path` in `paths.h` in Step 3.
 
 ## Usage
 See the [wiki](https://github.com/xprism1/romog/wiki) for a detailed guide on how to use romorganizer.
