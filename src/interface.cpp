@@ -94,16 +94,13 @@ std::vector<std::string> sortPaths(std::vector<std::string> paths){
 }
 
 /*
- * Generates a config file (YAML with DAT path and path to folder containing roms) if existing config does not exist. If an existing config exists, it will add new DAT paths in dats/ to it (if any).
+ * Adds new DAT paths in dats/ to the config file.
  * The default folder path is "Insert path to romset here"; if info is provided, it will autofill folder paths for that DAT group, provided the DATs are in dats/<dat group name>. Note that autofilling will only work if the DAT isin't in the config.
  * 
  * Arguments:
  *     info (Optional) : Tuple containing name of DAT group to autofill and base path. E.g. if base path is /path/to/folder, folder path for dats/<dat group name>/a.dat will be set to /path/to/folder/a
 */
 void genConfig(std::tuple<std::string, std::string> info){
-  YAML::Node config;
-  YAML::Node dats;
-
   bool autoFill = true;
   if(std::get<0>(info) == "not_set" && std::get<1>(info) == "not_set"){
     autoFill = false;
@@ -112,12 +109,8 @@ void genConfig(std::tuple<std::string, std::string> info){
   std::vector<std::string> path_to_dats = getAllFilesInDir(dats_path);
   path_to_dats = sortPaths(path_to_dats); // sort paths
 
-  bool config_exists = false;
-  if(filesys::exists(config_path)){ // if config file exists
-    config = YAML::LoadFile(config_path);
-    config_exists = true;
-  }
-  dats = config["dats"];
+  YAML::Node config = YAML::LoadFile(config_path);
+  YAML::Node dats = config["dats"];
 
   for(auto i: path_to_dats){
     i = i.substr(dats_path.size()); // remove "/home/xp/Desktop/xp (My Tools)/romorganizer/debug/dats/" from i
@@ -158,11 +151,7 @@ void genConfig(std::tuple<std::string, std::string> info){
   output << config; // save to config file
   output.close();
 
-  if(!(config_exists)){
-    std::cout << "Generated config at " << config_path << std::endl;
-  } else {
-    std::cout << "Updated config at " << config_path << std::endl;
-  }
+  std::cout << "Updated config at " << config_path << std::endl;
   if(autoFill){
     std::cout << "Autofilled folder paths" << std::endl;
   }

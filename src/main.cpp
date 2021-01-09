@@ -9,6 +9,9 @@
 #include "../libs/termcolor.hpp"
 #include "../libs/docopt/docopt.h"
 
+#include <yaml-cpp/yaml.h>
+
+#include <paths.h>
 #include <dir2dat.h>
 #include <interface.h>
 #include <cache.h>
@@ -18,12 +21,27 @@
 
 namespace filesys = std::filesystem;
 
+char username[32]; // max username length = 32
+
+std::string config_path;
+std::string links_path;
+std::string sort_xsl_path;
+std::string www_path;
+std::string backup_path;
+std::string cache_path;
+std::string dats_path;
+std::string dats_new_path;
+std::string fix_path;
+std::string rebuild_path;
+std::string tmp_path;
+
 static const char USAGE[] =
 R"(romorganizer by xprism
 
     Usage:
       romog (-h | --help)
       romog (-v | --version)
+      romog (-i | --init)
       romog (-d | --dir2dat) [ns | --nosort] <folder-path> <dat-path>
       romog (-g | --genconfig) [-a | --auto <dat-group> <base-path>]
       romog (-l | --list) [u]
@@ -38,9 +56,10 @@ R"(romorganizer by xprism
     Options:
       -h --help             Show this screen.
       -v --version          Show version.
+      -i --init             Initializes config file's paths.
       -d --dir2dat          Creates a DAT file from a directory. If the specified DAT path is an existing file, it will append to it.
       ns --nosort           Disables sorting of the resultant file.
-      -g --genconfig        Generates a config file for romorganizer. If the config file exists, it will append new DATs to it (if any).
+      -g --genconfig        Append new DATs to the config file (if any).
       -a --auto             Automatically insert folder paths for a DAT group. Note that this will remove all existing folder paths for said DAT group.
       -l --list             Lists DAT files with their profile number and set count.
       u                     Replace set count with latest DAT version from the DAT group's site.
@@ -75,6 +94,91 @@ R"(romorganizer by xprism
 */
 int main(int argc, char* argv[]){
   std::map<std::string, docopt::value> args = docopt::docopt(USAGE, {argv+1, argv+argc}, true, "romorganizer v1.0\nxprism 2020-2021");  // true: show help if requested, followed by version string
+
+  cuserid(username); // getting username for config path
+  if(!(filesys::is_directory("/home/" + std::string(username) + "/.config/romog/"))){
+    filesys::create_directory("/home/" + std::string(username) + "/.config/romog/"); // create .config/romog/ if not present
+  }
+
+  config_path = "/home/" + std::string(username) + "/.config/romog/config.yaml"; // config file
+
+  if((!(filesys::exists(config_path))) || args["--init"].asBool()){ // initializes config file with paths (YAML format)
+    YAML::Node config;
+    YAML::Node paths = config["paths"];
+    paths["links"] = "Insert path here";
+    paths["sort_xsl"] = "Insert path here";
+    paths["www"] = "Insert path here";
+    paths["backup"] = "Insert path here";
+    paths["cache"] = "Insert path here";
+    paths["dats"] = "Insert path here";
+    paths["dats_new"] = "Insert path here";
+    paths["fix"] = "Insert path here";
+    paths["rebuild"] = "Insert path here";
+    paths["tmp"] = "Insert path here";
+
+    std::ofstream output(config_path);
+    output << config; // save to config file
+    output.close();
+    std::cout << "Generated config at " << config_path << std::endl;
+    std::cout << "Please replace \"Insert path here\" with the appropriate paths before continuing to use romog." << std::endl;
+  } else {
+    YAML::Node config = YAML::LoadFile(config_path);
+    YAML::Node paths = config["paths"];
+    int count = 0;
+
+    for(auto it = paths.begin(); it != paths.end(); ++it){ // iterating through "paths:"
+      std::string key = it->first.as<std::string>();
+      std::string value = it->second.as<std::string>();
+      count += 1;
+
+      if(value == "Insert path here"){
+        std::cout << "Please replace \"Insert path here\" with the appropriate paths." << std::endl;
+        exit(0);
+      } else if (!(filesys::exists(value))){
+        std::cout << value << " does not exist, please create that file/directory." << std::endl;
+        exit(0);
+      } else { // get paths
+        if(count > 3){ // count > 3 means we are now at the paths to directories
+          if(value.back() != '/'){ // if last character is not a forwardslash
+            value.push_back('/'); // add it
+          }
+        }
+
+        switch (count) {
+          case 1:
+            links_path = value;
+            break;
+          case 2:
+            sort_xsl_path = value;
+            break;
+          case 3:
+            www_path = value;
+            break;
+          case 4:
+            backup_path = value;
+            break;
+          case 5:
+            cache_path = value;
+            break;
+          case 6:
+            dats_path = value;
+            break;
+          case 7:
+            dats_new_path = value;
+            break;
+          case 8:
+            fix_path = value;
+            break;
+          case 9:
+            rebuild_path = value;
+            break;
+          case 10:
+            tmp_path = value;
+            break;
+        }
+      }
+    }
+  }
 
   if(args["--dir2dat"].asBool()){
     if(args["ns"].asBool() || args["--nosort"].asBool()){
