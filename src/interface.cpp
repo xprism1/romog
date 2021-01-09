@@ -10,7 +10,7 @@
 #include <curl/curl.h>
 #include <pugixml.hpp>
 
-#include "../libs/termcolor.hpp"
+#include "../libs/termcolor/termcolor.hpp"
 #include "../libs/libfort/src/fort.hpp"
 
 #include <paths.h>

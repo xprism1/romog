@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <set>
 
-#include "../libs/termcolor.hpp"
+#include "../libs/termcolor/termcolor.hpp"
 
 #include <paths.h>
 #include <gethashes.h>

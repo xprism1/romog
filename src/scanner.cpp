@@ -8,7 +8,7 @@
 #include <set>
 #include <map>
 
-#include "../libs/termcolor.hpp"
+#include "../libs/termcolor/termcolor.hpp"
 
 #include <paths.h>
 #include <gethashes.h>
