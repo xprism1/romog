@@ -32,6 +32,7 @@ std::string cache_path;
 std::string dats_path;
 std::string dats_new_path;
 std::string fix_path;
+std::string headers_path;
 std::string rebuild_path;
 std::string tmp_path;
 
@@ -84,11 +85,11 @@ R"(romorganizer by xprism
 
 /*
  * Handles command line arguments passed.
- * 
+ *
  * Arguments:
  *     argc : Number of command line arguments passed by user (includes name of program)
  *     argv : Array of arguments
- * 
+ *
  * Notes:
  *     Uses library: https://github.com/docopt/docopt.cpp
 */
@@ -170,9 +171,12 @@ int main(int argc, char* argv[]){
             fix_path = value;
             break;
           case 9:
-            rebuild_path = value;
+            headers_path = value;
             break;
           case 10:
+            rebuild_path = value;
+            break;
+          case 11:
             tmp_path = value;
             break;
         }
@@ -228,7 +232,7 @@ int main(int argc, char* argv[]){
       if(folder_path.back() != '/'){ // if last character is not a forwardslash
         folder_path.push_back('/'); // add it
       }
-    
+
       if(toRemove){
         rebuild(std::get<0>(paths),folder_path, true);
       } else {
@@ -330,7 +334,7 @@ int main(int argc, char* argv[]){
       } else {
         deleteProfile(std::get<0>(paths), false);
       }
-    } 
+    }
   } else if (args["--update-dats"].asBool()){
     if(args["d"].asBool()){
       updateDats(true);

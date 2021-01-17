@@ -16,6 +16,7 @@ extern std::string cache_path; // .cache files are stored here
 extern std::string dats_path; // place your DATs here
 extern std::string dats_new_path; // place new DATs here
 extern std::string fix_path; // fixDATs are output here
+extern std::string headers_path; // place your header files here
 extern std::string rebuild_path; // places your files to be rebuilt here
 extern std::string tmp_path; // temporary place where files are stored for further operations (should be empty)
 

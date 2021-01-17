@@ -14,10 +14,12 @@
 namespace filesys = std::filesystem;
 
 /*
- * Calculates CRC32, MD5 and SHA1 of a file
+ * Calculates CRC32, MD5 and SHA1 of a file, optionally skipping first X bytes before calculating hashes if certain criteria are met.
  *
  * Arguments:
  *     path : Path to a file
+ *     start_offset (Optional) : Offset to start calculating hash from (in decimal)
+ *     data (Optional) : Vector of tuples containing offset (in decimal) and their expected values (in lowercase); if all values at offsets of file matches expected values, hash is calculated from start_offset to the end of the file. If not, hash is calculated over the entire file.
  *
  * Returns:
  *     output : Vector containing file size, CRC32, MD5, SHA1 of the file (in that order)
@@ -26,8 +28,15 @@ namespace filesys = std::filesystem;
  *     CRC32 function taken from: https://blog.csdn.net/xiaobin_HLJ80/article/details/19500207
  *     MD5 function taken from: https://stackoverflow.com/a/42958050
  *     SHA1 function is a slight modification of the MD5 function.
+ *     Getting hex from file: Partially taken from https://stackoverflow.com/questions/29238697/char-hex-because-it-shows-ffffff#comment46683759_29238733
+ *
+ * E.g. for Atari 7800:
+ * std::vector<std::tuple<int, std::string>> data;
+ * data.push_back(std::make_tuple(1,"415441524937383030"));
+ * data.push_back(std::make_tuple(96,"0000000041435455414c20434152542044415441205354415254532048455245"));
+ * std::vector<std::string> output = getHashes("Asteroids (USA).a78",128,data);
  */
-std::vector<std::string> getHashes(std::string path) {
+std::vector<std::string> getHashes(std::string path, int start_offset, std::vector<std::tuple<int, std::string>> data) {
   // checks
   if(!(filesys::exists(path))){
     std::cout << path << " does not exist!" << std::endl;
@@ -61,18 +70,73 @@ std::vector<std::string> getHashes(std::string path) {
   SHA1_Init(&sha1Context);
 
   char buf[1024 * 16]; // create buffer
+  char b[1024*16-start_offset]; // buf without header
+  int num_bytes_read = 0; // number of bytes read
+  std::vector<bool> checked; // vector of bools of whether each <data> matches
+  bool skipping_header_on_this_run = false; // whether we are skipping header on this chunk of buffer
+  bool skipped_header = false; // whether the header has been skipped
+
   unsigned int crc32 = 0xFFFFFFFF;
   while (file.good()) {
     file.read(buf, sizeof(buf)); // read file in chunks into buffer
 
+    if(start_offset == -1 && data.size() == 0) { // not skipping header
+      skipping_header_on_this_run = false;
+    } else {
+      num_bytes_read += file.gcount();
+      for(int i = 0; i < data.size(); i++){
+        if(i == 0 && checked.size() == 0 || checked.size() == i && num_bytes_read >= std::get<0>(data[i])){ // if (its the first time we're running the code or checked[i] dosen't exist) and number of bytes read >= data offset
+          std::string to_check = "";
+          for(int j = std::get<0>(data[i]); j < std::get<0>(data[i]) + std::get<1>(data[i]).size()/2; j++){ // e.g. std::get<0>(data[i]) = 1, std::get<1>(data[i]) = "4e45" ⇒ we need to get bytes from offsets 1,2,3,4 ⇒ for(int j = 1, j < 5; j++) ⇒ 1 (std::get<0>(data[i])) + 4 (std::get<1>(data[i]).size()/2) = 5
+            std::stringstream ss;
+            ss << std::hex << std::setfill('0') << std::setw(2) << (unsigned int)(unsigned char)buf[j];
+            to_check += ss.str();
+          }
+
+          if(std::get<1>(data[i]) == to_check){ // if <data> matches
+            checked.push_back(true);
+          } else {
+            checked.push_back(false);
+          }
+        }
+      }
+
+      if(num_bytes_read >= start_offset && !(skipped_header)){
+        if (!(std::find(checked.begin(), checked.end(), false) != checked.end())){ // if "false" does not exist in checked (i.e. all of the rules are fufilled)
+          std::copy(buf + start_offset, std::end(buf), b); // copy (buf+start_offset to end of buf) to b
+          skipping_header_on_this_run = true;
+        }
+      }
+    }
+
     // calculate crc32
-    for(int i = 0; i < file.gcount(); i++) {
-      crc32 = (crc32 >> 8) ^ crc32table[(crc32 ^ buf[i]) & 0xFF];
+    if(skipping_header_on_this_run){
+      for(int i = 0; i < file.gcount()-start_offset; i++) {
+        crc32 = (crc32 >> 8) ^ crc32table[(crc32 ^ b[i]) & 0xFF];
+      }
+    } else {
+      for(int i = 0; i < file.gcount(); i++) {
+        crc32 = (crc32 >> 8) ^ crc32table[(crc32 ^ buf[i]) & 0xFF];
+      }
     }
 
     // call MD5_Update/SHA1_Update with each chunk of data you read from the file
-    MD5_Update(&md5Context, buf, file.gcount());
-    SHA1_Update(&sha1Context, buf, file.gcount());
+    if(skipping_header_on_this_run){
+      MD5_Update(&md5Context, b, file.gcount()-start_offset);
+      SHA1_Update(&sha1Context, b, file.gcount()-start_offset);
+    } else {
+      MD5_Update(&md5Context, buf, file.gcount());
+      SHA1_Update(&sha1Context, buf, file.gcount());
+    }
+
+    if(skipping_header_on_this_run){
+      skipped_header = true;
+      skipping_header_on_this_run = false;
+    }
+  }
+
+  if(skipped_header){
+    filesize -= start_offset; // subtract skipped bytes from file size
   }
 
   // call MD5_Final/SHA1_Final once done to get the result
@@ -116,6 +180,11 @@ std::vector<std::string> getHashes(std::string path) {
     crc32sum = "";
     md5sum = "";
     sha1sum = "";
+  }
+
+  // account for CRC32 with <8 characters
+  if(!(crc32sum == "0")){
+    crc32sum.insert(0, 8 - crc32sum.size(), '0'); // add (8-crc32sum's length) '0's in front of crc32sum (because CRC32's in DAT are all 8 characters)
   }
 
   // output

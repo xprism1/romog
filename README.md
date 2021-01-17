@@ -13,17 +13,19 @@ romorganizer is designed to be run from the terminal and is command-line only, m
 This tool does not condone usage of unauthorized downloaded game ROMs, and does not provide means to acquire any ROMs. Only use this tool with ROMs you personally copied from game medium(s) that you own. Do not distribute any ROMs and once you do not own the original game medium(s) anymore, remove the ROMs/copies that you have made.
 
 ## Features
-- Easy batch scanning of DAT files
+- Typical features of a ROM manager i.e. scanner, rebuilder, generating fixDAT, dir2dat
+- Header skipping support
+- Easy batch scanning of DATs
 - Shows which of your DATs are outdated
 - Automatic downloading/sorting of new DATs from download links in a text file
 - Color output in terminal!
 
 ## To-Do List
-- Scanning without fixing, instead showing what needs to be renamed/removed
-- Header-skipping support
-- 7zip support
-- Level 2/3 scanning
-- TOSEC DATs support
+- [x] Header-skipping support
+- [ ] Scanning without fixing, instead showing what needs to be renamed/removed
+- [ ] 7zip support
+- [ ] Level 2/3 scanning
+- [ ] TOSEC DATs support
 
 ## Build from source
 1. Install these dependencies through your package manager: `openssl`, `pugixml`, `xalan-c`, `xerces-c`, `libarchive`, `yaml-cpp`, `curl`. Install `git`, `make`, `gcc` if you don't have them.

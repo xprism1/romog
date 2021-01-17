@@ -8,6 +8,8 @@
 #include <set>
 #include <map>
 
+#include <pugixml.hpp>
+
 #include "../libs/termcolor/termcolor.hpp"
 
 #include <paths.h>
@@ -198,6 +200,7 @@ std::tuple<int, int, int, int> countSetsRoms(cacheData cache_data){
 
 /*
  * Scans a romset, makes all set name, rom name and CRC32 of files in folder match DAT. Outputs sets have/missing, roms have/missing to terminal. Also keeps track of what is present (and what isin't) via a cache.
+ * If a header skipper XML is present, header skipping support is enabled. (If <data> matches, hash will be calculated from start offset to end of file; if not, hash is calculated over the entire file). scan() looks for the header XML as such: e.g. if dat_path = dats_path + "/No-Intro/Atari - 7800 (date).dat", header_path = headers_path + "/No-Intro/Atari - 7800.xml"
  *
  * Arguments:
  *     dat_path : Path to DAT file
@@ -237,11 +240,54 @@ void scan(std::string dat_path, std::string folder_path){
   datData dat_data = getDataFromDAT(dat_path);
   cacheData cache_data = getDataFromCache(dat_path);
 
+  // headers
+  std::string header_path = headers_path + dat_path.erase(dat_path.find(dats_path),dats_path.size()); // header_path = "/home/xp/Desktop/xp (My Tools)/romorganizer/debug/headers/" + dat_path without "/home/xp/Desktop/xp (My Tools)/romorganizer/debug/dats/"
+  std::string parent_path = filesys::path(header_path).parent_path();
+  header_path = parent_path + "/" + std::get<2>(getDatName(header_path)) + ".xml";
+
+  bool scanningWithHeaders = false; // whether header support will be enabled for this scan
+  pugi::xml_document doc;
+  int start_offset;
+  std::vector<std::tuple<int, std::string>> info;
+  if(filesys::exists(header_path)){
+    scanningWithHeaders = true;
+
+    // getting header skipping info from XML in header_path
+    pugi::xml_parse_result result = doc.load_file(header_path.c_str());
+    pugi::xml_node root = doc.child("detector");
+
+    pugi::xml_node rule = root.child("rule");
+    start_offset = std::stol(rule.attribute("start_offset").value(),nullptr,16); // convert start_offset (in hex) to dec
+    for(pugi::xml_node data = rule.child("data"); data != nullptr; data = data.next_sibling()){
+      int offset = std::stol(data.attribute("offset").value(),nullptr,16); // convert offset (in hex) to dec
+      std::string value = data.attribute("value").value();
+      std::transform(value.begin(), value.end(), value.begin(), ::tolower);
+      info.push_back(std::make_tuple(offset,value));
+    }
+
+    std::cout << "Using header skipper " << header_path << std::endl;
+  }
+
   // comparing files in folder with files in DAT; making sure all CRCs of files in folder match DAT; moves non-matching files to backup folder
   std::set<std::string> to_zip; // vector containing names of folders in tmp/ to zip; set so duplicates won't get inserted
   for(auto i: files_in_folder){
-    std::map<std::string, std::string> zipinfo = getInfoFromZip(folder_path+i+".zip");
+    std::map<std::string, std::string> zipinfo;
     bool is_extracted = false;
+
+    if(scanningWithHeaders){
+      std::string tmp_dir = tmp_path + i + "/";
+      extract(folder_path+i+".zip",tmp_dir);
+      is_extracted = true;
+
+      std::vector<std::string> files = getAllFilesInDir(tmp_dir);
+      for(auto j: files){
+        std::vector<std::string> fileinfo = getHashes(j, start_offset, info);
+        std::string filename = filesys::path(j).filename();
+        zipinfo[filename] = fileinfo[1];
+      }
+    } else {
+      zipinfo = getInfoFromZip(folder_path+i+".zip");
+    }
 
     for(auto j: zipinfo){
       std::string file_rom_name = j.first;
@@ -290,8 +336,14 @@ void scan(std::string dat_path, std::string folder_path){
             extract(folder_path+i+".zip",tmp_dir);
             is_extracted = true;
           }
-          
-          std::vector<std::string> hashes = getHashes(tmp_dir+file_rom_name);
+
+          std::vector<std::string> hashes;
+          if(scanningWithHeaders){
+            hashes = getHashes(tmp_dir+file_rom_name, start_offset, info);
+          } else {
+            hashes = getHashes(tmp_dir+file_rom_name);
+          }
+
           if (!(std::find(dat_data.sha1.begin(), dat_data.sha1.end(), hashes[3]) != dat_data.sha1.end())){ // SHA1 does not exist in DAT, so move file to backup folder
             if(!(filesys::exists(backup_path+i))){
               filesys::create_directory(backup_path+i);
@@ -365,12 +417,27 @@ void scan(std::string dat_path, std::string folder_path){
   to_zip.clear(); // vector containing names of folders in tmp/ to zip; set so duplicates won't get inserted
   for(auto i: x_set_names){
     // getting correct set name and rom name for file
-    std::map<std::string, std::string> zipinfo = getInfoFromZip(folder_path+i+".zip");
+    std::map<std::string, std::string> zipinfo;
+    bool is_extracted = false; // whether zip file is extracted to tmp dir
+    if(scanningWithHeaders){
+      std::string tmp_dir = tmp_path + i + "/";
+      extract(folder_path+i+".zip",tmp_dir);
+      is_extracted = true;
+
+      std::vector<std::string> files = getAllFilesInDir(tmp_dir);
+      for(auto j: files){
+        std::vector<std::string> fileinfo = getHashes(j, start_offset, info);
+        std::string filename = filesys::path(j).filename();
+        zipinfo[filename] = fileinfo[1];
+      }
+    } else {
+      zipinfo = getInfoFromZip(folder_path+i+".zip");
+    }
+
     std::string file_rom_name;
     std::string crc32;
     std::string correct_set_name;
     std::string correct_rom_name;
-    bool is_extracted = false; // whether zip file is extracted to tmp dir
     bool crc32_is_duped = false; // whether CRC is duplicated in DAT
 
     for(auto j: zipinfo){ // note: this code checks all the files in the zip if one or more files in zip isin't in cache
@@ -389,7 +456,12 @@ void scan(std::string dat_path, std::string folder_path){
           extract(folder_path+i+".zip",tmp_dir);
           is_extracted = true;
         }
-        std::vector<std::string> hashes = getHashes(tmp_dir+file_rom_name);
+        std::vector<std::string> hashes;
+        if(scanningWithHeaders){
+          hashes = getHashes(tmp_dir+file_rom_name, start_offset, info);
+        } else {
+          hashes = getHashes(tmp_dir+file_rom_name);
+        }
         sha1 = hashes[3];
         bool sha1_is_duped = false;
         std::string dir_with_correct_name;
