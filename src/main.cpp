@@ -114,6 +114,7 @@ int main(int argc, char* argv[]){
     paths["dats"] = "Insert path here";
     paths["dats_new"] = "Insert path here";
     paths["fix"] = "Insert path here";
+    paths["headers"] = "Insert path here";
     paths["rebuild"] = "Insert path here";
     paths["tmp"] = "Insert path here";
 
