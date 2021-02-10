@@ -1,5 +1,7 @@
 # romorganizer
 
+![](logo.png)
+
 ## Introduction
 romorganizer is a ROM manager written in C++, specifically for Linux.
 
@@ -67,3 +69,6 @@ All code written in `src/` is licensed under AGPL v3. See `LICENSE` for more det
 
 ## Contributions
 Any feature suggestions or code contributions are accepted. Contributors will be attributed in `README.md`.
+
+Thank you to:
+- CrystalStudios (logo)
