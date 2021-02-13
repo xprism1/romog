@@ -7,11 +7,13 @@
 #include <set>
 
 #include "../libs/termcolor/termcolor.hpp"
+#include "../libs/cpp_progress_bar/progress_bar.hpp"
 
 #include <paths.h>
 #include <gethashes.h>
 #include <dir2dat.h>
 #include <cache.h>
+#include <dat.h>
 #include "../include/archive.h"
 #include <scanner.h>
 #include <rebuilder.h>
@@ -206,45 +208,10 @@ void rebuild(std::string dat_path, std::string folder_path, bool toRemove){
   // counting number of sets and roms that are present
   cache_data = getDataFromCache(dat_path); // need to do this or else set/rom count will be wrong
   std::tuple<int, int, int, int> count = countSetsRoms(cache_data);
-  int sets_have = std::get<0>(count);
-  int sets_total = std::get<1>(count);
-  int roms_have = std::get<2>(count);
-  int roms_total = std::get<3>(count);
 
   // update cache with set/rom count
-  std::ifstream is(cache_path);
-  std::ofstream ofs("temp.txt");
-  int line_no = 0;
-  std::string line;
-  while(getline(is,line)){
-    line_no++;
-    if (line_no == 2){
-      ofs << "\"" << dat_path << "\" \"" << folder_path << "\" \"" << sets_have << "\" \"" << sets_total << "\" \"" << roms_have << "\" \"" << roms_total << "\"" << std::endl;
-    } else {
-      ofs << line << std::endl;
-    }
-  }
-  is.close();
-  ofs.close();
-  filesys::remove(cache_path);
-  filesys::rename("temp.txt",cache_path);
+  updateCacheCount(dat_path, cache_path, folder_path, count);
 
   std::cout << std::endl;
-  if(sets_have == 0){
-    std::cout << termcolor::cyan << "Sets have:    " << termcolor::red << sets_have << "/" << sets_total << std::endl;
-    std::cout << termcolor::cyan << "Sets missing: " << termcolor::red << sets_total-sets_have << "/" << sets_total << std::endl;
-    std::cout << termcolor::cyan << "Roms have:    " << termcolor::red << roms_have << "/" << roms_total << std::endl;
-    std::cout << termcolor::cyan << "Roms missing: " << termcolor::red << roms_total-roms_have << "/" << roms_total << std::endl;
-  } else if (sets_have < sets_total){
-    std::cout << termcolor::cyan << "Sets have:    " << termcolor::color<255,165,0> << sets_have << "/" << sets_total << std::endl;
-    std::cout << termcolor::cyan << "Sets missing: " << termcolor::color<255,165,0> << sets_total-sets_have << "/" << sets_total << std::endl;
-    std::cout << termcolor::cyan << "Roms have:    " <<termcolor::color<255,165,0> << roms_have << "/" << roms_total << std::endl;
-    std::cout << termcolor::cyan << "Roms missing: " << termcolor::color<255,165,0> << roms_total-roms_have << "/" << roms_total << std::endl;
-  } else if (sets_have == sets_total){
-    std::cout << termcolor::cyan << "Sets have:    " << termcolor::green << sets_have << "/" << sets_total << std::endl;
-    std::cout << termcolor::cyan << "Sets missing: " << termcolor::green << sets_total-sets_have << "/" << sets_total << std::endl;
-    std::cout << termcolor::cyan << "Roms have:    " << termcolor::green << roms_have << "/" << roms_total << std::endl;
-    std::cout << termcolor::cyan << "Roms missing: " << termcolor::green << roms_total-roms_have << "/" << roms_total << std::endl;
-  }
-  std::cout << termcolor::reset << std::endl;
+  printCount(count);
 }

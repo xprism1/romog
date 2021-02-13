@@ -16,6 +16,7 @@
 #include <paths.h>
 #include <dir2dat.h>
 #include <cache.h>
+#include <dat.h>
 #include <scanner.h>
 #include <rebuilder.h>
 #include <interface.h>
@@ -300,7 +301,6 @@ std::tuple<std::string, std::string> getPaths(std::string profile_no){
 */
 void showInfo(std::string dat_path, std::string hash, std::string show){
   cacheData cache_data = getDataFromCache(dat_path);
-  datData dat_data = getDataFromDAT(dat_path);
   std::vector<std::tuple<std::string,std::string,std::string>> cache_data_combined;
   for(int i = 0; i < cache_data.set_name.size(); i++){
     if(show == "p"){
@@ -346,17 +346,10 @@ void showInfo(std::string dat_path, std::string hash, std::string show){
   int counter = 0;
   for(auto i: cache_data_combined){
     if(hash != "not_set"){
-      std::string crc32;
-      std::string md5;
-      std::string sha1;
-      for(int j = 0; j < dat_data.rom_name.size(); j++){ // getting CRC32, MD5, SHA1 from DAT
-        if(dat_data.rom_name[j] == std::get<1>(i) && dat_data.set_name[j] == std::get<0>(i)){
-          crc32 = dat_data.crc32[j];
-          md5 = dat_data.md5[j];
-          sha1 = dat_data.sha1[j];
-          break;
-        }
-      }
+      std::tuple<std::string, std::string, std::string, std::string> hashes = getHashFromName(dat_path, std::make_tuple(std::get<0>(i), std::get<1>(i)));
+      std::string crc32 = std::get<0>(hashes);
+      std::string md5 = std::get<1>(hashes);
+      std::string sha1 = std::get<2>(hashes);
 
       if(hash == "c"){
         table.write_ln(std::get<0>(i),std::get<1>(i),crc32);

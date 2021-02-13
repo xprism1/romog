@@ -11,6 +11,7 @@
 #include <paths.h>
 #include <dir2dat.h>
 #include <cache.h>
+#include <dat.h>
 #include <fixdat.h>
 
 namespace filesys = std::filesystem;
@@ -89,7 +90,6 @@ void genFixDat(std::string dat_path, std::string fixdat_path){
 
   // getting missing roms from cache
   cacheData cache_data = getDataFromCache(dat_path);
-  datData dat_data = getDataFromDAT(dat_path);
 
   // adding in missing roms
   std::vector<int> added; // list of index of entries that are added to fixdat
@@ -110,19 +110,11 @@ void genFixDat(std::string dat_path, std::string fixdat_path){
         }
       }
       for(auto j: index){
-        std::string md5;
-        std::string sha1;
-        std::string size;
-
-        // getting size, MD5, SHA1 from DAT
-        for(int k = 0; k < dat_data.set_name.size(); k++){
-          if(dat_data.rom_name[k] == cache_data.rom_name[j]){
-            md5 = dat_data.md5[k];
-            sha1 = dat_data.sha1[k];
-            size = dat_data.size[k];
-            break;
-          }
-        }
+        // getting size, MD5, SHA1 from DAT (not in cache)
+        std::tuple<std::string, std::string, std::string, std::string> hashes = getHashFromName(dat_path, std::make_tuple(cache_data.set_name[j], cache_data.rom_name[j]));
+        std::string md5 = std::get<1>(hashes);
+        std::string sha1 = std::get<2>(hashes);
+        std::string size = std::get<3>(hashes);
 
         // adding to file
         pugi::xml_node rom = game.append_child("rom");

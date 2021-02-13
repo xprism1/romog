@@ -16,6 +16,7 @@
 #include <gethashes.h>
 #include <dir2dat.h>
 #include <cache.h>
+#include <dat.h>
 #include "../include/archive.h"
 #include <scanner.h>
 
@@ -199,6 +200,70 @@ std::tuple<int, int, int, int> countSetsRoms(cacheData cache_data){
 }
 
 /*
+ * Updates sets have/total and roms have/total in cache
+ *
+ * Arguments:
+ *     dat_path : Path to DAT file
+ *     cache_path : Path to cache file
+ *     folder_path : Path to folder to be scanned against the DAT file
+ *     count : Tuple containing set have, set total, rom have, rom total (in that order)
+ */
+void updateCacheCount(std::string dat_path, std::string cache_path, std::string folder_path, std::tuple<int, int, int, int> count){
+  int sets_have = std::get<0>(count);
+  int sets_total = std::get<1>(count);
+  int roms_have = std::get<2>(count);
+  int roms_total = std::get<3>(count);
+  
+  std::ifstream is(cache_path);
+  std::ofstream ofs("temp.txt");
+  int line_no = 0;
+  std::string line;
+  while(getline(is,line)){
+    line_no++;
+    if (line_no == 2){
+      ofs << "\"" << dat_path << "\" \"" << folder_path << "\" \"" << sets_have << "\" \"" << sets_total << "\" \"" << roms_have << "\" \"" << roms_total << "\"" << std::endl;
+    } else {
+      ofs << line << std::endl;
+    }
+  }
+  is.close();
+  ofs.close();
+  filesys::remove(cache_path);
+  filesys::rename("temp.txt",cache_path);
+}
+
+/*
+ * Prints sets have/total and roms have/total (in color)
+ * 
+ * Arguments:
+ *     count : Tuple containing set have, set total, rom have, rom total (in that order)
+ */
+void printCount(std::tuple<int, int, int, int> count){
+  int sets_have = std::get<0>(count);
+  int sets_total = std::get<1>(count);
+  int roms_have = std::get<2>(count);
+  int roms_total = std::get<3>(count);
+
+  if(sets_have == 0){
+    std::cout << termcolor::cyan << "Sets have:    " << termcolor::red << sets_have << "/" << sets_total << std::endl;
+    std::cout << termcolor::cyan << "Sets missing: " << termcolor::red << sets_total-sets_have << "/" << sets_total << std::endl;
+    std::cout << termcolor::cyan << "Roms have:    " << termcolor::red << roms_have << "/" << roms_total << std::endl;
+    std::cout << termcolor::cyan << "Roms missing: " << termcolor::red << roms_total-roms_have << "/" << roms_total << std::endl;
+  } else if (sets_have < sets_total){
+    std::cout << termcolor::cyan << "Sets have:    " << termcolor::color<255,165,0> << sets_have << "/" << sets_total << std::endl;
+    std::cout << termcolor::cyan << "Sets missing: " << termcolor::color<255,165,0> << sets_total-sets_have << "/" << sets_total << std::endl;
+    std::cout << termcolor::cyan << "Roms have:    " <<termcolor::color<255,165,0> << roms_have << "/" << roms_total << std::endl;
+    std::cout << termcolor::cyan << "Roms missing: " << termcolor::color<255,165,0> << roms_total-roms_have << "/" << roms_total << std::endl;
+  } else if (sets_have == sets_total){
+    std::cout << termcolor::cyan << "Sets have:    " << termcolor::green << sets_have << "/" << sets_total << std::endl;
+    std::cout << termcolor::cyan << "Sets missing: " << termcolor::green << sets_total-sets_have << "/" << sets_total << std::endl;
+    std::cout << termcolor::cyan << "Roms have:    " << termcolor::green << roms_have << "/" << roms_total << std::endl;
+    std::cout << termcolor::cyan << "Roms missing: " << termcolor::green << roms_total-roms_have << "/" << roms_total << std::endl;
+  }
+  std::cout << termcolor::reset << std::endl;
+}
+
+/*
  * Scans a romset, makes all set name, rom name and CRC32 of files in folder match DAT. Outputs sets have/missing, roms have/missing to terminal. Also keeps track of what is present (and what isin't) via a cache.
  * If a header skipper XML is present, header skipping support is enabled. (If <data> matches, hash will be calculated from start offset to end of file; if not, hash is calculated over the entire file). scan() looks for the header XML as such: e.g. if dat_path = dats_path + "/No-Intro/Atari - 7800 (date).dat", header_path = headers_path + "/No-Intro/Atari - 7800.xml"
  *
@@ -241,7 +306,8 @@ void scan(std::string dat_path, std::string folder_path){
   cacheData cache_data = getDataFromCache(dat_path);
 
   // headers
-  std::string header_path = headers_path + dat_path.erase(dat_path.find(dats_path),dats_path.size()); // header_path = "/home/xp/Desktop/xp (My Tools)/romorganizer/debug/headers/" + dat_path without "/home/xp/Desktop/xp (My Tools)/romorganizer/debug/dats/"
+  std::string dat_path_copy = dat_path; // copy dat_path to dat_path_copy so the original dosen't get changed (we need it for later)
+  std::string header_path = headers_path + dat_path_copy.erase(dat_path_copy.find(dats_path),dats_path.size()); // header_path = "/home/xp/Desktop/xp (My Tools)/romorganizer/debug/headers/" + dat_path without "/home/xp/Desktop/xp (My Tools)/romorganizer/debug/dats/"
   std::string parent_path = filesys::path(header_path).parent_path();
   header_path = parent_path + "/" + std::get<2>(getDatName(header_path)) + ".xml";
 
@@ -270,6 +336,7 @@ void scan(std::string dat_path, std::string folder_path){
 
   // comparing files in folder with files in DAT; making sure all CRCs of files in folder match DAT; moves non-matching files to backup folder
   std::set<std::string> to_zip; // vector containing names of folders in tmp/ to zip; set so duplicates won't get inserted
+
   for(auto i: files_in_folder){
     std::map<std::string, std::string> zipinfo;
     bool is_extracted = false;
@@ -300,7 +367,7 @@ void scan(std::string dat_path, std::string folder_path){
         }
       }
       if(!(inCache)){
-        if (!(std::find(dat_data.crc32_s.begin(), dat_data.crc32_s.end(), crc32) != dat_data.crc32_s.end())){ // CRC32 does not exist in DAT, so move file to backup folder
+        if (!(hashInDAT(dat_path, crc32, "1"))){ // CRC32 does not exist in DAT, so move file to backup folder
           std::string tmp_dir = tmp_path + i + "/";
           if(!(filesys::exists(tmp_dir))){
             filesys::create_directory(tmp_dir);
@@ -344,7 +411,7 @@ void scan(std::string dat_path, std::string folder_path){
             hashes = getHashes(tmp_dir+file_rom_name);
           }
 
-          if (!(std::find(dat_data.sha1.begin(), dat_data.sha1.end(), hashes[3]) != dat_data.sha1.end())){ // SHA1 does not exist in DAT, so move file to backup folder
+          if (!(hashInDAT(dat_path, hashes[3], "2"))){ // SHA1 does not exist in DAT, so move file to backup folder
             if(!(filesys::exists(backup_path+i))){
               filesys::create_directory(backup_path+i);
             }
@@ -415,6 +482,7 @@ void scan(std::string dat_path, std::string folder_path){
 
   std::vector<std::tuple<std::string, std::string, std::string, std::string, std::string, std::string>> toAddToCache; // set name, followed by rom name, CRC32, MD5, SHA1, status
   to_zip.clear(); // vector containing names of folders in tmp/ to zip; set so duplicates won't get inserted
+
   for(auto i: x_set_names){
     // getting correct set name and rom name for file
     std::map<std::string, std::string> zipinfo;
@@ -491,14 +559,9 @@ void scan(std::string dat_path, std::string folder_path){
         }
 
         if(!(sha1_is_duped)){ // CRC is duplicated but SHA1 is not
-          for(int i = 0; i < dat_data.sha1.size(); i++){
-            if(dat_data.sha1[i] == sha1){
-              index = i;
-              break;
-            }
-          }
-          correct_set_name = dat_data.set_name[index];
-          correct_rom_name = dat_data.rom_name[index];
+          std::tuple<std::string, std::string> names = getNameFromHash(dat_path, sha1, "2");
+          correct_set_name = std::get<0>(names);
+          correct_rom_name = std::get<1>(names);
         }
 
         dir_with_correct_name = tmp_path+correct_set_name+"/";
@@ -510,14 +573,9 @@ void scan(std::string dat_path, std::string folder_path){
           }
         }
       } else { // neither CRC nor SHA1 are duplicated
-        for(int i = 0; i < dat_data.crc32.size(); i++){
-          if(dat_data.crc32[i] == crc32){
-            index = i;
-            break;
-          }
-        }
-        correct_set_name = dat_data.set_name[index];
-        correct_rom_name = dat_data.rom_name[index];
+        std::tuple<std::string, std::string> names = getNameFromHash(dat_path, crc32, "1");
+        correct_set_name = std::get<0>(names);
+        correct_rom_name = std::get<1>(names);
       }
 
       if(!(i == correct_set_name && file_rom_name == correct_rom_name)) { // if filename or setname is incorrect
@@ -573,57 +631,17 @@ void scan(std::string dat_path, std::string folder_path){
   cache_data = addToCache(dat_path,toAddToCache);
 
   // comparing cache with DAT; gets entries in DAT but not in cache, writes "Missing" entries to cache
-  toAddToCache.clear();
-  for(int i = 0; i < dat_data.set_name.size(); i++){
-    if (!((std::find(cache_data.set_name.begin(), cache_data.set_name.end(), dat_data.set_name[i]) != cache_data.set_name.end()) && (std::find(cache_data.rom_name.begin(), cache_data.rom_name.end(), dat_data.rom_name[i]) != cache_data.rom_name.end()))){ // if dat_data.set_name[i] is not in cache_data.set_name and dat_data.rom_name[i] is not in cache_data.rom_name
-      toAddToCache.push_back(std::make_tuple(dat_data.set_name[i], dat_data.rom_name[i], dat_data.crc32[i], "-", "-", "Missing"));
-    }
-  }
+  toAddToCache = getMissing(dat_path, cache_data);
 
   // adding new entries to cache
   cache_data = addToCache(dat_path,toAddToCache);
 
   // counting number of sets and roms that are present
   std::tuple<int, int, int, int> count = countSetsRoms(cache_data);
-  int sets_have = std::get<0>(count);
-  int sets_total = std::get<1>(count);
-  int roms_have = std::get<2>(count);
-  int roms_total = std::get<3>(count);
 
   // update cache with set/rom count
-  std::ifstream is(cache_path);
-  std::ofstream ofs("temp.txt");
-  int line_no = 0;
-  std::string line;
-  while(getline(is,line)){
-    line_no++;
-    if (line_no == 2){
-      ofs << "\"" << dat_path << "\" \"" << folder_path << "\" \"" << sets_have << "\" \"" << sets_total << "\" \"" << roms_have << "\" \"" << roms_total << "\"" << std::endl;
-    } else {
-      ofs << line << std::endl;
-    }
-  }
-  is.close();
-  ofs.close();
-  filesys::remove(cache_path);
-  filesys::rename("temp.txt",cache_path);
+  updateCacheCount(dat_path, cache_path, folder_path, count);
 
   std::cout << std::endl;
-  if(sets_have == 0){
-    std::cout << termcolor::cyan << "Sets have:    " << termcolor::red << sets_have << "/" << sets_total << std::endl;
-    std::cout << termcolor::cyan << "Sets missing: " << termcolor::red << sets_total-sets_have << "/" << sets_total << std::endl;
-    std::cout << termcolor::cyan << "Roms have:    " << termcolor::red << roms_have << "/" << roms_total << std::endl;
-    std::cout << termcolor::cyan << "Roms missing: " << termcolor::red << roms_total-roms_have << "/" << roms_total << std::endl;
-  } else if (sets_have < sets_total){
-    std::cout << termcolor::cyan << "Sets have:    " << termcolor::color<255,165,0> << sets_have << "/" << sets_total << std::endl;
-    std::cout << termcolor::cyan << "Sets missing: " << termcolor::color<255,165,0> << sets_total-sets_have << "/" << sets_total << std::endl;
-    std::cout << termcolor::cyan << "Roms have:    " <<termcolor::color<255,165,0> << roms_have << "/" << roms_total << std::endl;
-    std::cout << termcolor::cyan << "Roms missing: " << termcolor::color<255,165,0> << roms_total-roms_have << "/" << roms_total << std::endl;
-  } else if (sets_have == sets_total){
-    std::cout << termcolor::cyan << "Sets have:    " << termcolor::green << sets_have << "/" << sets_total << std::endl;
-    std::cout << termcolor::cyan << "Sets missing: " << termcolor::green << sets_total-sets_have << "/" << sets_total << std::endl;
-    std::cout << termcolor::cyan << "Roms have:    " << termcolor::green << roms_have << "/" << roms_total << std::endl;
-    std::cout << termcolor::cyan << "Roms missing: " << termcolor::green << roms_total-roms_have << "/" << roms_total << std::endl;
-  }
-  std::cout << termcolor::reset << std::endl;
+  printCount(count);
 }
