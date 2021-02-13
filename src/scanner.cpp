@@ -11,6 +11,7 @@
 #include <pugixml.hpp>
 
 #include "../libs/termcolor/termcolor.hpp"
+#include "../libs/cpp_progress_bar/progress_bar.hpp"
 
 #include <paths.h>
 #include <gethashes.h>
@@ -336,8 +337,14 @@ void scan(std::string dat_path, std::string folder_path){
 
   // comparing files in folder with files in DAT; making sure all CRCs of files in folder match DAT; moves non-matching files to backup folder
   std::set<std::string> to_zip; // vector containing names of folders in tmp/ to zip; set so duplicates won't get inserted
+  ProgressBar bar(files_in_folder.size());
+  bar.SetFrequencyUpdate(50);
+  int jobindex = 0;
 
   for(auto i: files_in_folder){
+    jobindex++;
+    bar.Progressed(jobindex);
+
     std::map<std::string, std::string> zipinfo;
     bool is_extracted = false;
 
@@ -482,8 +489,14 @@ void scan(std::string dat_path, std::string folder_path){
 
   std::vector<std::tuple<std::string, std::string, std::string, std::string, std::string, std::string>> toAddToCache; // set name, followed by rom name, CRC32, MD5, SHA1, status
   to_zip.clear(); // vector containing names of folders in tmp/ to zip; set so duplicates won't get inserted
+  ProgressBar bar2(x_set_names.size());
+  bar2.SetFrequencyUpdate(50);
+  jobindex = 0;
 
   for(auto i: x_set_names){
+    jobindex++;
+    bar2.Progressed(jobindex);
+
     // getting correct set name and rom name for file
     std::map<std::string, std::string> zipinfo;
     bool is_extracted = false; // whether zip file is extracted to tmp dir

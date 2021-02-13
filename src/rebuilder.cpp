@@ -7,7 +7,6 @@
 #include <set>
 
 #include "../libs/termcolor/termcolor.hpp"
-#include "../libs/cpp_progress_bar/progress_bar.hpp"
 
 #include <paths.h>
 #include <gethashes.h>

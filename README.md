@@ -48,10 +48,11 @@ pugixml
 xalan-c
 xerces-c
 yaml-cpp
-docopt [included in repo]
-libfort [included in repo]
-termcolor [included in repo]
-zip [included in repo]
+cpp_progress_bar [included in repo] [ekg/cpp_progress_bar]
+docopt [included in repo] [docopt/docopt.cpp]
+libfort [included in repo] [seleznevae/libfort]
+termcolor [included in repo] [ikalnytskyi/termcolor]
+zip [included in repo] [kuba--/zip]
 ```
 
 ## Project Layout
