@@ -9,6 +9,20 @@
 #include <dat.h>
 
 /*
+ * Handle data in DAT that has to be manually fixed
+ *
+ * Arguments:
+ *     rom_name : Rom name in DAT
+ * 
+ * Returns:
+ *     rom_name : Fixed rom name
+ */
+std::string fixName(std::string rom_name){
+  std::replace(rom_name.begin(), rom_name.end(), '\\', '/'); // handle rom name with path; replace all occurences of "\" to "/"
+  return rom_name;
+}
+
+/*
  * Gets data from DAT file
  *
  * Arguments:
@@ -32,7 +46,7 @@ datData getDataFromDAT(std::string dat_path){
     for(pugi::xml_node rom = game.child("rom"); rom != nullptr; rom = rom.next_sibling()){
       set_name = game.attribute("name").value();
       rom_name = rom.attribute("name").value();
-      std::replace(rom_name.begin(), rom_name.end(), '\\', '/'); // handle rom name with path; replace all occurences of "\" to "/"
+      rom_name = fixName(rom_name);
 
       dat_data.set_name_s.insert(set_name);
       dat_data.set_name.push_back(set_name);
@@ -123,10 +137,14 @@ std::tuple<std::string, std::string> getNameFromHash(std::string dat_path, std::
   for(pugi::xml_node game = root.child("game"); game != nullptr; game = game.next_sibling()) {
     for(pugi::xml_node rom = game.child("rom"); rom != nullptr; rom = rom.next_sibling()){
       if(hash_type == "1" && rom.attribute("crc").value() == hash){
-        names = std::make_tuple(game.attribute("name").value(), rom.attribute("name").value());
+        std::string rom_name = rom.attribute("name").value();
+        rom_name = fixName(rom_name);
+        names = std::make_tuple(game.attribute("name").value(), rom_name);
         goto stop;
       } else if (hash_type == "2" && rom.attribute("sha1").value() == hash){
-        names = std::make_tuple(game.attribute("name").value(), rom.attribute("name").value());
+        std::string rom_name = rom.attribute("name").value();
+        rom_name = fixName(rom_name);
+        names = std::make_tuple(game.attribute("name").value(), rom_name);
         goto stop;
       }
     }
@@ -155,7 +173,9 @@ std::tuple<std::string, std::string, std::string, std::string> getHashFromName(s
 
   for(pugi::xml_node game = root.child("game"); game != nullptr; game = game.next_sibling()) {
     for(pugi::xml_node rom = game.child("rom"); rom != nullptr; rom = rom.next_sibling()){
-      if(game.attribute("name").value() == std::get<0>(names) && rom.attribute("name").value() == std::get<1>(names)){
+      std::string rom_name = rom.attribute("name").value();
+      rom_name = fixName(rom_name);
+      if(game.attribute("name").value() == std::get<0>(names) && rom_name == std::get<1>(names)){
         hashes = std::make_tuple(rom.attribute("crc").value(), rom.attribute("md5").value(), rom.attribute("sha1").value(), rom.attribute("size").value());
         goto stop;
       }

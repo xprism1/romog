@@ -40,6 +40,7 @@ struct datData {
   std::vector<std::vector<std::string>> sha1_dupes_set_names;
 };
 
+std::string fixName(std::string rom_name);
 datData getDataFromDAT(std::string dat_path);
 bool hashInDAT(std::string dat_path, std::string hash, std::string hash_type);
 std::tuple<std::string, std::string> getNameFromHash(std::string dat_path, std::string hash, std::string hash_type);

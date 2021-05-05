@@ -320,8 +320,10 @@ std::vector<std::tuple<std::string, std::string, std::string, std::string, std::
 
   for(pugi::xml_node game = root.child("game"); game != nullptr; game = game.next_sibling()) {
     for(pugi::xml_node rom = game.child("rom"); rom != nullptr; rom = rom.next_sibling()){
-      if (!((std::find(cache_data.set_name.begin(), cache_data.set_name.end(), game.attribute("name").value()) != cache_data.set_name.end()) && (std::find(cache_data.rom_name.begin(), cache_data.rom_name.end(), rom.attribute("name").value()) != cache_data.rom_name.end()))){ // if set name in DAT is not in cache_data.set_name and rom name in DAT is not in cache_data.rom_name
-      toAddToCache.push_back(std::make_tuple(game.attribute("name").value(), rom.attribute("name").value(), rom.attribute("crc").value(), "-", "-", "Missing"));
+      std::string rom_name = rom.attribute("name").value();
+      rom_name = fixName(rom_name);
+      if (!((std::find(cache_data.set_name.begin(), cache_data.set_name.end(), game.attribute("name").value()) != cache_data.set_name.end()) && (std::find(cache_data.rom_name.begin(), cache_data.rom_name.end(), rom_name) != cache_data.rom_name.end()))){ // if set name in DAT is not in cache_data.set_name and rom name in DAT is not in cache_data.rom_name
+      toAddToCache.push_back(std::make_tuple(game.attribute("name").value(), rom_name, rom.attribute("crc").value(), "-", "-", "Missing"));
       }
     }
   }
