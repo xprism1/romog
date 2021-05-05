@@ -17,7 +17,7 @@
 namespace filesys = std::filesystem;
 
 using xercesc_3_2::XMLPlatformUtils;
-using xalanc_1_11::XalanTransformer;
+using xalanc_1_12::XalanTransformer;
 
 /*
  * Gets a list of all files in given directory and its subdirectories.
@@ -181,9 +181,9 @@ std::string sortDat(std::string dat_path){
   XalanTransformer theXalanTransformer; // creates a XalanTransformer
 
   // does the transformation
-  xalanc_1_11::XSLTInputSource xmlIn(dat_path.c_str());
-  xalanc_1_11::XSLTInputSource xslIn(sort_xsl_path.c_str());
-  xalanc_1_11::XSLTResultTarget xmlOut(sorted_dat_path.c_str());
+  xalanc_1_12::XSLTInputSource xmlIn(dat_path.c_str());
+  xalanc_1_12::XSLTInputSource xslIn(sort_xsl_path.c_str());
+  xalanc_1_12::XSLTResultTarget xmlOut(sorted_dat_path.c_str());
   int theResult = theXalanTransformer.transform(xmlIn,xslIn,xmlOut);
 
   if(theResult != 0){
