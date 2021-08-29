@@ -2,6 +2,8 @@
 
 ![](logo.png)
 
+# Update 08/21: Rewrite is undergoing to use a SQL DB for the cache, so I've paused development for the old codebase
+
 ## Introduction
 romorganizer is a ROM manager written in C++, specifically for Linux.
 
